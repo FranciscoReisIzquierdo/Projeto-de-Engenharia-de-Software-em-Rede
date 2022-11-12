@@ -22,7 +22,7 @@ public class StreamWorker extends JFrame implements ActionListener{
     //int RTP_dest_port = 25000; //destination port for RTP packets
     //int RTP_dest_port; //destination port for RTP packets
     InetAddress ClientIPAddr; //Client IP address
-    List<Integer> UDPclients = new ArrayList<>();
+    List<Vizinho> UDPclients = new ArrayList<>();
 
     static String VideoFileName; //video file to request to the server
 
@@ -41,7 +41,7 @@ public class StreamWorker extends JFrame implements ActionListener{
     //--------------------------
     //Constructor
     //--------------------------
-    public StreamWorker(int destPort) {
+    public StreamWorker(Vizinho vizinho) {
         //init Frame
         super("StreamWorker");
 
@@ -50,7 +50,7 @@ public class StreamWorker extends JFrame implements ActionListener{
         sTimer.setInitialDelay(0);
         sTimer.setCoalesce(true);
         sBuf = new byte[15000]; //allocate memory for the sending buffer
-        this.UDPclients.add(destPort);
+        this.UDPclients.add(vizinho);
         //this.RTP_dest_port = destPort;
         try {
             RTPsocket = new DatagramSocket(); //init RTP socket
@@ -105,9 +105,11 @@ public class StreamWorker extends JFrame implements ActionListener{
                 byte[] packet_bits = new byte[packet_length];
                 rtp_packet.getpacket(packet_bits);
 
-                for(Integer client: this.UDPclients){
+                //System.out.println("Size of vizinhos: " + this.UDPclients.size());
+                for(Vizinho vizinho: this.UDPclients){
+                    //System.out.println("Vizinho at #udpPort: " + vizinho.getUdpPort());
                     //send the packet as a DatagramPacket over the UDP socket
-                    senddp = new DatagramPacket(packet_bits, packet_length, ClientIPAddr, client);
+                    senddp = new DatagramPacket(packet_bits, packet_length, ClientIPAddr, vizinho.getUdpPort());
                     RTPsocket.send(senddp);
                 }
 

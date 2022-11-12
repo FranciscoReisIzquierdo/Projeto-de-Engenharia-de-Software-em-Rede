@@ -134,6 +134,7 @@ public class ClientStream{
             try{
                 //receive the DP from the socket:
                 RTPsocket.receive(rcvdp);
+                //System.out.println("Received a packet!!!");
 
                 //create an RTPpacket object from the DP
                 RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());

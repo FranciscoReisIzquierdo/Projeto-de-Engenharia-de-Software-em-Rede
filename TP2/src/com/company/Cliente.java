@@ -8,38 +8,44 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 public class Cliente {
-    private static final int MAX_BYTES = 1024;
-    private InetAddress host;
     //private int originPort;
     //private static int RTP_RCV_PORT = 25000;
-    int RTP_RCV_PORT;
-    private int destPort;
-    private InetAddress dest;
-    private Socket socketInfo;
     //DatagramSocket RTPsocket;
     private DataInputStream input;
+    private static final int MAX_BYTES = 1024;
+    private InetAddress host;
+    int RTP_RCV_PORT; // #udp origin port
+    private int tcpDestPort;
+    private InetAddress dest;
+    private Socket socketInfo;
     private DataOutputStream output;
     private ClientStream stream;
     boolean isOn;
 
 
-    public Cliente(int UDP_origin_Port, int destPort, String dest) throws IOException {
+    public Cliente(int udpOriginPort, int tcpDestPort, String dest) throws IOException {
         this.host = InetAddress.getByName("localhost");
-        this.RTP_RCV_PORT = UDP_origin_Port;
-        //this.originPort = originPort;
-        this.destPort = destPort;
+        this.RTP_RCV_PORT = udpOriginPort;
+        this.tcpDestPort = tcpDestPort;
         this.dest = InetAddress.getByName(dest);
-        this.socketInfo = new Socket(this.dest, this.destPort);
+        this.socketInfo = new Socket(this.dest, this.tcpDestPort);
         this.input = new DataInputStream(new BufferedInputStream(this.socketInfo.getInputStream()));
         this.output = new DataOutputStream(new BufferedOutputStream(this.socketInfo.getOutputStream()));
     }
 
-    // Tipo | Quem (host:porta) | O que |
+    public void run() throws IOException {
+        request();
+
+    }
+
+
     public void request() throws IOException {
-        this.output.write(typeMessage(2, null, this.host, this.RTP_RCV_PORT, this.dest, this.destPort, 0, null));
+        Header header = new Header(2, this.host.toString(), this.RTP_RCV_PORT, this.RTP_RCV_PORT, "/" + this.host.toString().split("/")[1], this.dest.toString(), 0, null);
+        this.output.write(header.typeMessage());
         this.output.flush();
+        System.out.println("Request for stream sent to :" + this.dest + ":" + this.tcpDestPort);
         this.isOn = true;
-        this.stream = new ClientStream(this.socketInfo, this.output, this.host, this.RTP_RCV_PORT, this.dest, this.destPort);
+        this.stream = new ClientStream(this.socketInfo, this.output, this.host, this.RTP_RCV_PORT, this.dest, this.tcpDestPort);
         while(this.socketInfo.isConnected());
     }
 

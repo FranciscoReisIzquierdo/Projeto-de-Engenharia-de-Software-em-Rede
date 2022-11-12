@@ -4,15 +4,12 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Timer;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Servidor {
-    private static final int MAX_BYTES= 1024;
+    private static final int MAX_BYTES = 1024;
     private int originPort;
     private InetAddress origin;
     private ServerSocket server;
@@ -31,13 +28,13 @@ public class Servidor {
 
     public void run() throws IOException, InterruptedException {
 
-        for(Vizinho v: this.listaVizinhos){
+        for (Vizinho v : this.listaVizinhos) {
             Thread thread = new Thread(new VizinhoServerWorker(v.getVizinho(), v.getTcpPort(), v.getUdpPort(), this.originPort, this.udpCenter));
             this.threadsVizinhos.add(thread);
             thread.start();
         }
 
-        for(Thread t : this.threadsVizinhos) t.join();
+        for (Thread t : this.threadsVizinhos) t.join();
 
         /*
 
@@ -80,37 +77,21 @@ public class Servidor {
             }
         }*/
     }
-
-
-    public void createStream(Header header){
-        StreamWorker.VideoFileName = "C:\\Users\\franc\\OneDrive\\Ambiente de Trabalho\\4Ano1Semestre\\ESR\\TP2\\src\\com\\company\\movie.Mjpeg";
-        File f = new File(StreamWorker.VideoFileName);
-        if (f.exists()) {
-            //Create a Main object
-            this.udpCenter.setStream(new StreamWorker(header.getUDP_originPort()));
-            //show GUI: (opcional!)
-            //s.pack();
-            //s.setVisible(true);
-        } else {
-            System.out.println("Ficheiro de video não existe: " + StreamWorker.VideoFileName);
-        }
-    }
 }
 
 
-class TabelaRotas{
-
-    
-}
 
 class UDPCenter{
+    private int server;
     private int UDPClients;
     private StreamWorker stream;
     private Lock lock = new ReentrantLock();
+    private ArrayList<Vizinho> listaStreams = new ArrayList<>();
 
     public UDPCenter(int UDPClients, StreamWorker stream){
         this.UDPClients = UDPClients;
         this.stream = stream;
+        this.server = -1;
     }
 
     public int getUDPClients() { return UDPClients; }
@@ -126,6 +107,12 @@ class UDPCenter{
     public void addUDPClient(){ this.UDPClients++; }
 
     public void removeUDPClient(){ this.UDPClients--; }
+
+    public ArrayList<Vizinho> getListaStreams() { return listaStreams; }
+
+    public int getServer() { return server; }
+
+    public void setServer(int server) { this.server = server; }
 }
 
 
@@ -133,36 +120,19 @@ class UDPCenter{
 class Header{
     private int type;
     private String font;
-    private int tcpFont;
+    private int udpFontPortOrtcpFontPort;
     private String host;
-    private int tcpPort;
-    private int UDP_originPort;
+    private int udpOriginPortOrtcpOriginPort;
     private String dest;
-    private int destPort;
     private int jumps;
     private Timestamp timestamp;
-    private int size;
 
-    public Header(int type, String font, int tcpFont, int tcpPort, String host,int UDP_originPort, String dest, int destPort, int jumps, Timestamp timestamp, int size){
+    public Header(int type, String font, int udpFontPortOrtcpFontPort, int udpOriginPortOrtcpOriginPort, String host, String dest, int jumps, Timestamp timestamp){
         this.type = type;
         this.font = font;
-        this.tcpFont = tcpFont;
+        this.udpFontPortOrtcpFontPort = udpFontPortOrtcpFontPort;
         this.host = host;
-        this.tcpPort = tcpPort;
-        this.UDP_originPort = UDP_originPort;
-        this.dest = dest;
-        this.destPort = destPort;
-        this.jumps = jumps;
-        this.timestamp = timestamp;
-        this.size = size;
-    }
-
-    public Header(int type, String font, int tcpFont, int tcpPort, String host, String dest, int jumps, Timestamp timestamp){
-        this.type = type;
-        this.font = font;
-        this.tcpFont = tcpFont;
-        this.host = host;
-        this.tcpPort = tcpPort;
+        this.udpOriginPortOrtcpOriginPort = udpOriginPortOrtcpOriginPort;
         this.dest = dest;
         this.jumps = jumps;
         this.timestamp = timestamp;
@@ -172,37 +142,27 @@ class Header{
 
     public String getHost() { return host; }
 
-    public int getUDP_originPort() { return UDP_originPort; }
-
-    public int getSize() { return size; }
+    public int getUDP_originPort() { return udpOriginPortOrtcpOriginPort; }
 
     public String getDest() { return dest; }
-
-    public int getDestPort() { return destPort; }
 
     public int getJumps() { return jumps; }
 
     public Timestamp getTimestamp() { return timestamp; }
 
-    public int getTcpPort() { return tcpPort; }
-
     public String getFont() { return font; }
 
-    public int getTcpFont() { return tcpFont; }
+    public int getUdpFontPortOrtcpFontPort() { return udpFontPortOrtcpFontPort; }
 
-
+    public int getUdpOriginPortOrtcpOriginPort() { return udpOriginPortOrtcpOriginPort; }
 
     public byte[] typeMessage() throws IOException {
         byte []header = null;
         switch (this.type){
             case 1:
-                if(this.timestamp == null) timestamp = new Timestamp(new Date().getTime());
-                header = (this.type + ";" + this.host + ":" + this.tcpPort + ";" + this.dest + ";" + this.jumps + ";" + this.timestamp + ";" + this.font + ":" + this.tcpFont).getBytes(StandardCharsets.UTF_8);
-                break;
-
             case 2:
                 if(this.timestamp == null) timestamp = new Timestamp(new Date().getTime());
-                //header = (this.type + ";" + this.host + ":" + RTP_RCV_PORT + ";" + dest + ":" + destPort + ";" + jumps + ";" + timestamp).getBytes(StandardCharsets.UTF_8);
+                header = (this.type + ";" + this.host + ":" + this.udpOriginPortOrtcpOriginPort + ";" + this.dest + ";" + this.jumps + ";" + this.timestamp + ";" + this.font + ":" + this.udpFontPortOrtcpFontPort).getBytes(StandardCharsets.UTF_8);
                 break;
 
             case 3:
@@ -224,33 +184,17 @@ class Header{
         String []header = convert.split(";");
         int type = Integer.parseInt(header[0]);
 
-        if(type == 1){
+        if(type == 1 || type == 2){
             // type;ipOrig:tcpPort;ipDest;jumps;timestamp
 
             String host = header[1].split(":")[0];
-            int tcpPort = Integer.parseInt(header[1].split(":")[1]);
+            int udpOriginPortOrtcpOriginPort = Integer.parseInt(header[1].split(":")[1]);
             String dest = header[2];
             int jumps = Integer.parseInt(header[3]);
             Timestamp timestamp = Timestamp.valueOf(header[4]);
             String font = header[5].split(":")[0];
-            int tcpFont = Integer.parseInt(header[5].split(":")[1]);
-            return new Header(type, font, tcpFont, tcpPort, host, dest, jumps, timestamp);
-        }
-        if(type == 2) {
-            // type;ipOrig:udpPort:tcpPort;ipDest;jumps;timestamp
-
-            String[] origin = header[1].split(":");
-            String host = origin[0];
-            int UDP_destPort = Integer.parseInt(origin[1]);
-            int tcpPort = Integer.parseInt(origin[2]);
-            String[] destination = header[2].split(":");
-            String dest = destination[0];
-            int destPort = Integer.parseInt(destination[1]);
-            int jumps = Integer.parseInt(header[3]);
-            Timestamp timestamp = Timestamp.valueOf(header[4]);
-            String font = header[5].split(":")[0];
-            int tcpFont = Integer.parseInt(header[5].split(":")[1]);
-            return new Header(type,font, tcpFont, tcpPort, host, UDP_destPort, dest, destPort, jumps, timestamp, size);
+            int udpFontPortOrtcpFontPort = Integer.parseInt(header[5].split(":")[1]);
+            return new Header(type, font, udpFontPortOrtcpFontPort, udpOriginPortOrtcpOriginPort, host, dest, jumps, timestamp);
         }
         return null;
     }
@@ -260,15 +204,12 @@ class Header{
         return "Header{" +
                 "type=" + type +
                 ", font='" + font + '\'' +
-                ", tcpFont=" + tcpFont +
+                ", udpFontPortOrtcpFontPort=" + udpFontPortOrtcpFontPort +
                 ", host='" + host + '\'' +
-                ", tcpPort=" + tcpPort +
-                ", UDP_originPort=" + UDP_originPort +
+                ", udpOriginPortOrtcpOriginPort=" + udpOriginPortOrtcpOriginPort +
                 ", dest='" + dest + '\'' +
-                ", destPort=" + destPort +
                 ", jumps=" + jumps +
                 ", timestamp=" + timestamp +
-                ", size=" + size +
                 '}';
     }
 }

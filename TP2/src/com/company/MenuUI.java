@@ -19,14 +19,16 @@ public class MenuUI {
 
         switch(opcao){
             case 1:
-                System.out.println("Escreva o <ip_de_destino>:<#portaUDP_de_origem>:<#portaTCP_de_destino>: ");
+                System.out.println("Escreva o <#portaUDP_de_origem>");
+                int udpOriginPort = Integer.parseInt(sc.next());
+                System.out.println("Escreva o <ip_de_destino>:<#portaTCP_de_destino>: ");
                 String info[] = sc.next().split(":");
                 String destino = info[0];
-                int UDPdestPort = Integer.parseInt(info[1]);
-                int destPort = Integer.parseInt(info[2]);
-                Cliente cliente = new Cliente(UDPdestPort, destPort, destino);
-                cliente.request();
+                int tcpDestPort = Integer.parseInt(info[1]);
+                Cliente cliente = new Cliente(udpOriginPort, tcpDestPort, destino);
+                cliente.run();
                 break;
+
             case 2:
                 System.out.println("Escreva o <#portaTCP_de_origem>");
                 int tcpPortRouter = Integer.parseInt(sc.next());
@@ -92,4 +94,11 @@ class Vizinho{
     public int getTcpPort() { return this.tcpPort; }
 
     public int getUdpPort() { return this.udpPort; }
+
+    @Override
+    public String toString() {
+        return vizinho +
+                ":#tcpPort=" + tcpPort +
+                ":#udpPort=" + udpPort;
+    }
 }
