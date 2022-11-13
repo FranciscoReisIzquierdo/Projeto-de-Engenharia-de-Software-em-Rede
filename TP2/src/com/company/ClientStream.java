@@ -111,12 +111,15 @@ public class ClientStream{
             //stop the timer
             cTimer.stop();
             try {
-                Cliente.disconnect(client, output, host, RTP_RCV_PORT, dest, destPort);
+                Header header = new Header(3, host.toString(), RTP_RCV_PORT, RTP_RCV_PORT, host.toString(), dest.toString(), 0, null);
+                output.write(header.typeMessage());
+                output.flush();
+                client.close();
+                System.out.println("Até breve! Esperamos que tenha disfrutado dos serviços de streamming da oNode!");
+                System.exit(0);
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
-            //exit
-            //System.exit(0);
         }
     }
 
@@ -134,7 +137,6 @@ public class ClientStream{
             try{
                 //receive the DP from the socket:
                 RTPsocket.receive(rcvdp);
-                //System.out.println("Received a packet!!!");
 
                 //create an RTPpacket object from the DP
                 RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());

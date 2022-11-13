@@ -9,7 +9,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Servidor {
-    private static final int MAX_BYTES = 1024;
     private int originPort;
     private InetAddress origin;
     private ServerSocket server;
@@ -35,47 +34,6 @@ public class Servidor {
         }
 
         for (Thread t : this.threadsVizinhos) t.join();
-
-        /*
-
-
-
-        while(true){
-            System.out.println("Server waiting for clients to connect.");
-            Socket client = this.server.accept();
-            DataInputStream input= new DataInputStream(new BufferedInputStream(client.getInputStream()));
-
-            byte[] info = new byte[MAX_BYTES];
-            int size = input.read(info);
-
-            Header header = Header.translate(info, size);
-            System.out.println("Client " + header.getHost() + " at UDP port #" + header.getUDP_originPort() + " has connected!");
-            System.out.println(header.toString());
-            try {
-                int type = header.getType();
-                switch (type) {
-                    // Probe packet -> sent by routers only
-                    case 1:
-
-
-                    case 2:
-                        // Request packet -> sent by clients only
-                        this.udpCenter.getLock().lock();
-                        if (this.udpCenter.getUDPClients() == 0) {
-                            createStream(header);
-                        } else {
-                            this.udpCenter.getStream().UDPclients.add(header.getUDP_originPort());
-                        }
-                        this.udpCenter.addUDPClient();
-                        Thread threadClient = new Thread(new ServerWorker(client, this.udpCenter, header.getUDP_originPort(), header.getHost(), input));
-                        threadClient.start();
-                        this.udpCenter.getLock().unlock();
-                }
-            }
-            catch (Exception e){
-                System.out.println(e);
-            }
-        }*/
     }
 }
 
@@ -99,8 +57,6 @@ class UDPCenter{
     public StreamWorker getStream() { return stream; }
 
     public Lock getLock() { return lock; }
-
-    public void setUDPClients(int UDPClients) { this.UDPClients = UDPClients; }
 
     public void setStream(StreamWorker stream) { this.stream = stream; }
 
@@ -142,10 +98,6 @@ class Header{
 
     public String getHost() { return host; }
 
-    public int getUDP_originPort() { return udpOriginPortOrtcpOriginPort; }
-
-    public String getDest() { return dest; }
-
     public int getJumps() { return jumps; }
 
     public Timestamp getTimestamp() { return timestamp; }
@@ -161,16 +113,11 @@ class Header{
         switch (this.type){
             case 1:
             case 2:
+            case 3:
                 if(this.timestamp == null) timestamp = new Timestamp(new Date().getTime());
                 header = (this.type + ";" + this.host + ":" + this.udpOriginPortOrtcpOriginPort + ";" + this.dest + ";" + this.jumps + ";" + this.timestamp + ";" + this.font + ":" + this.udpFontPortOrtcpFontPort).getBytes(StandardCharsets.UTF_8);
                 break;
-
-            case 3:
-                if(this.timestamp == null) timestamp = new Timestamp(new Date().getTime());
-                //header = (this.type + ";" + this.host + ":" + RTP_RCV_PORT + ";" + dest + ":" + destPort + ";" + jumps + ";" + timestamp).getBytes(StandardCharsets.UTF_8);
-                break;
         }
-
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
         outputStream.write(header);
         return outputStream.toByteArray();
@@ -184,19 +131,14 @@ class Header{
         String []header = convert.split(";");
         int type = Integer.parseInt(header[0]);
 
-        if(type == 1 || type == 2){
-            // type;ipOrig:tcpPort;ipDest;jumps;timestamp
-
-            String host = header[1].split(":")[0];
-            int udpOriginPortOrtcpOriginPort = Integer.parseInt(header[1].split(":")[1]);
-            String dest = header[2];
-            int jumps = Integer.parseInt(header[3]);
-            Timestamp timestamp = Timestamp.valueOf(header[4]);
-            String font = header[5].split(":")[0];
-            int udpFontPortOrtcpFontPort = Integer.parseInt(header[5].split(":")[1]);
-            return new Header(type, font, udpFontPortOrtcpFontPort, udpOriginPortOrtcpOriginPort, host, dest, jumps, timestamp);
-        }
-        return null;
+        String host = header[1].split(":")[0];
+        int udpOriginPortOrtcpOriginPort = Integer.parseInt(header[1].split(":")[1]);
+        String dest = header[2];
+        int jumps = Integer.parseInt(header[3]);
+        Timestamp timestamp = Timestamp.valueOf(header[4]);
+        String font = header[5].split(":")[0];
+        int udpFontPortOrtcpFontPort = Integer.parseInt(header[5].split(":")[1]);
+        return new Header(type, font, udpFontPortOrtcpFontPort, udpOriginPortOrtcpOriginPort, host, dest, jumps, timestamp);
     }
 
     @Override

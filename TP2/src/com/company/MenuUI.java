@@ -26,6 +26,7 @@ public class MenuUI {
                 String destino = info[0];
                 int tcpDestPort = Integer.parseInt(info[1]);
                 Cliente cliente = new Cliente(udpOriginPort, tcpDestPort, destino);
+                System.out.println("Client started");
                 cliente.run();
                 break;
 
@@ -45,6 +46,7 @@ public class MenuUI {
                     listaVizinhosRouter.add(v);
                 }
                 Router router = new Router(tcpPortRouter, udpPortRouter, listaVizinhosRouter);
+                System.out.println("Router started");
                 router.run();
                 break;
             case 3:
@@ -60,6 +62,7 @@ public class MenuUI {
                     listaVizinhosServer.add(v);
                 }
                 Servidor servidor = new Servidor(tcpPortServer, listaVizinhosServer);
+                System.out.println("Server started");
                 servidor.run();
                 break;
             case 4:
