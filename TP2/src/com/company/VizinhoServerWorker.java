@@ -73,8 +73,7 @@ public class VizinhoServerWorker implements Runnable{
     }
 
     public void createStream(Vizinho vizinho){
-        if(this.tcpPort == 1000) StreamWorker.VideoFileName = "C:\\Users\\franc\\OneDrive\\Ambiente de Trabalho\\4Ano1Semestre\\ESR\\TP2\\src\\com\\company\\movie.Mjpeg";
-        else StreamWorker.VideoFileName = "C:\\Users\\franc\\OneDrive\\Ambiente de Trabalho\\4Ano1Semestre\\ESR\\TP2\\src\\com\\company\\meme.Mjpeg ";
+        StreamWorker.VideoFileName = "C:\\Users\\franc\\OneDrive\\Ambiente de Trabalho\\4Ano1Semestre\\ESR\\TP2\\src\\com\\company\\movie.Mjpeg";
         File f = new File(StreamWorker.VideoFileName);
         if (f.exists()) {
             //Create a Main object

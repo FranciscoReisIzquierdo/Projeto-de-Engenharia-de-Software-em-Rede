@@ -159,6 +159,7 @@ class Header{
             case 1:
             case 2:
             case 3:
+            case 4:
                 if(this.timestamp == null) this.timestamp = new Timestamp(new Date().getTime());
                 if(this.id == null) this.id = timestamp.toString() + font;
                 header = (this.type + ";" + this.host + ":" + this.udpOriginPortOrtcpOriginPort + ";" + this.dest + ";" + this.jumps + ";" + this.timestamp + ";" + this.font + ":" + this.udpFontPortOrtcpFontPort + ";" + this.id).getBytes(StandardCharsets.UTF_8);

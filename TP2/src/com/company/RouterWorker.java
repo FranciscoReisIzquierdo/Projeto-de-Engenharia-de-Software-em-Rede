@@ -49,7 +49,7 @@ public class RouterWorker implements Runnable{
                 size = this.input.read(info);
                 header = Header.translate(info, size);
             } catch (Exception e) {
-                System.out.println("Something went wrong on RouterWorker class...fix it you twat!");
+                System.out.println("Here > Something went wrong on RouterWorker class...fix it you twat!");
             }
             System.out.println("Received TCP Packet > " + header.toString() + "\n");
 
@@ -77,7 +77,8 @@ public class RouterWorker implements Runnable{
                     break;
 
                 case 3:
-                    running = destroyFlow(header);
+                case 4:
+                    running = destroyFlow(header, header.getType());
                     break;
             }
         }
@@ -168,7 +169,7 @@ public class RouterWorker implements Runnable{
                     thread.start();
 
                 } catch (IOException e) {
-                    System.out.println("The neighbor I am trying to connect is a client that is offline!");
+                    System.out.println("The neighbor " + vizinho.getVizinho() + ":" + vizinho.getUdpPort() + ":" + vizinho.getTcpPort() + " I am trying to flood is a client (that maybe is offline)!");
                 }
             }
         }
@@ -194,13 +195,16 @@ public class RouterWorker implements Runnable{
         }
 
         //Alterar para InetAdress
+
+        System.out.println("111111111Best server: " + this.udpCenter.getServer() + " e server: " + server);
         if(server != this.udpCenter.getServer() && this.udpCenter.getServer() != -1 && this.udpCenter.getUDPClients() > 0){
+            System.out.println("Entrou!");
             changeFlow();
             this.udpCenter.setServer(server);
             newFlow();
-            System.out.println("Best server: " + server);
         }
-        else if(this.udpCenter.getServer() == -1) this.udpCenter.setServer(server);
+        else if(this.udpCenter.getServer() == -1 || (server != this.udpCenter.getServer() && this.udpCenter.getUDPClients() == 0)) this.udpCenter.setServer(server);
+        System.out.println("Best server: " + this.udpCenter.getServer() + " e server: " + server);
 
         this.udpCenter.getLock().unlock();
     }
@@ -221,7 +225,7 @@ public class RouterWorker implements Runnable{
 
     public void changeFlow(){
         Rota bestRota = this.udpCenter.getTabelaEncaminhamento().get(this.udpCenter.getServer()).get(0);
-        Header request = new Header(3, this.host.toString(), this.udpPort, this.udpPort, "/" + this.host.toString().split("/")[1], bestRota.getInterfaceSaida().getVizinho().toString(), 0, null, null);
+        Header request = new Header(4, this.host.toString(), this.udpPort, this.udpPort, "/" + this.host.toString().split("/")[1], bestRota.getInterfaceSaida().getVizinho().toString(), 0, null, null);
         try {
             this.outputVizinhos.get(bestRota.getInterfaceSaida().getTcpPort()).write(request.typeMessage());
             this.outputVizinhos.get(bestRota.getInterfaceSaida().getTcpPort()).flush();
@@ -249,6 +253,7 @@ public class RouterWorker implements Runnable{
                 udpWorker.start();
                 this.outputVizinhos.get(bestRota.getInterfaceSaida().getTcpPort()).write(request.typeMessage());
                 this.outputVizinhos.get(bestRota.getInterfaceSaida().getTcpPort()).flush();
+                System.out.println("Sent TCP packet > " + request.toString() + "\n");
                 bestRota.setState(true);
             } catch (IOException e) {
                 System.out.println("Something went wrong on RouterWorker class reading type 2 message...fix it u dumb fuck!");
@@ -259,7 +264,7 @@ public class RouterWorker implements Runnable{
         this.udpCenter.getLock().unlock();
     }
 
-    public boolean destroyFlow(Header header){
+    public boolean destroyFlow(Header header, int type){
         this.udpCenter.getLock().lock();
         this.udpCenter.removeUDPClient();
         for(Vizinho vizinho : this.udpCenter.getListaStreams()){
@@ -284,8 +289,10 @@ public class RouterWorker implements Runnable{
                 // Change here to compare InetAddress!!!!!!!
                 if(v.getUdpPort() == header.getUdpFontPortOrtcpFontPort()){
                     System.out.println("Client " + v.getVizinho() + ":" + v.getUdpPort() + " has disconnected\n");
-                    this.udpCenter.getLock().unlock();
-                    return false;
+                    if(type == 3) {
+                        this.udpCenter.getLock().unlock();
+                        return false;
+                    }
                 }
             }
         }
