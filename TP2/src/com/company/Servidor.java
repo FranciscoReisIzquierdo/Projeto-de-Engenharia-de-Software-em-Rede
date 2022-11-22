@@ -5,6 +5,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -15,6 +16,8 @@ public class Servidor {
     private UDPCenter udpCenter;
     private ArrayList<Vizinho> listaVizinhos;
     private ArrayList<Thread> threadsVizinhos = new ArrayList<>();
+    //Alterar para InetAddress
+    private ConcurrentHashMap<Integer, DataOutputStream> outputsVizinhos = new ConcurrentHashMap<>();
 
 
     public Servidor(int originPort, ArrayList<Vizinho> listaVizinhos) throws IOException {
@@ -28,12 +31,44 @@ public class Servidor {
     public void run() throws IOException, InterruptedException {
 
         for (Vizinho v : this.listaVizinhos) {
-            Thread thread = new Thread(new VizinhoServerWorker(v.getVizinho(), v.getTcpPort(), v.getUdpPort(), this.originPort, this.udpCenter));
+            Socket socket = new Socket(v.getVizinho(), v.getTcpPort());
+            DataOutputStream output = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+            //Alterar para InetAddress
+            this.outputsVizinhos.put(v.getTcpPort(), output);
+            Thread thread = new Thread(new VizinhoServerWorker(v.getVizinho(), v.getTcpPort(), v.getUdpPort(), this.originPort, this.udpCenter, output, socket));
             this.threadsVizinhos.add(thread);
             thread.start();
         }
+        synchronized (this) {
+            int i = 0;
+            boolean flag = false;
+            while (true) {
+                if(i > 1) flag = true;
+                this.wait(15000);
+                for (Vizinho v : this.listaVizinhos) {
+                    sentProbe(v, this.outputsVizinhos.get(v.getTcpPort()), flag);
+                }
+                i++;
+                System.out.println("I -> " + i);
+            }
+        }
+    }
 
-        for (Thread t : this.threadsVizinhos) t.join();
+
+    public void sentProbe(Vizinho vizinho, DataOutputStream outputStream, boolean flag){
+        Header header = new Header(1, "/" + this.origin.toString().split("/")[1], this.originPort, this.originPort, "/" + this.origin.toString().split("/")[1], vizinho.getVizinho().toString(), 0, null, null);
+        try {
+            outputStream.write(header.typeMessage());
+            if((flag && this.originPort == 1000) || (!flag && this.originPort == 1001)){
+                synchronized (this){
+                    if(this.originPort == 1000) this.wait(15000);
+                    if(this.originPort == 1001) this.wait(3000);
+                }
+            }
+            outputStream.flush();
+        } catch (IOException | InterruptedException exception) {
+            System.out.println("Something went wrong on VizinhoServerWorker class...fix it, u dumb fuck!");
+        }
     }
 }
 
@@ -45,6 +80,8 @@ class UDPCenter{
     private StreamWorker stream;
     private Lock lock = new ReentrantLock();
     private ArrayList<Vizinho> listaStreams = new ArrayList<>();
+    private ConcurrentHashMap<String, Boolean> idMessages = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Integer, ArrayList<Rota>> tabelaEncaminhamento = new ConcurrentHashMap<>();
 
     public UDPCenter(int UDPClients, StreamWorker stream){
         this.UDPClients = UDPClients;
@@ -69,11 +106,16 @@ class UDPCenter{
     public int getServer() { return server; }
 
     public void setServer(int server) { this.server = server; }
+
+    public ConcurrentHashMap<String, Boolean> getIdMessages() { return idMessages; }
+
+    public ConcurrentHashMap<Integer, ArrayList<Rota>> getTabelaEncaminhamento() { return tabelaEncaminhamento; }
 }
 
 
 
 class Header{
+    private String id;
     private int type;
     private String font;
     private int udpFontPortOrtcpFontPort;
@@ -83,7 +125,7 @@ class Header{
     private int jumps;
     private Timestamp timestamp;
 
-    public Header(int type, String font, int udpFontPortOrtcpFontPort, int udpOriginPortOrtcpOriginPort, String host, String dest, int jumps, Timestamp timestamp){
+    public Header(int type, String font, int udpFontPortOrtcpFontPort, int udpOriginPortOrtcpOriginPort, String host, String dest, int jumps, Timestamp timestamp, String id){
         this.type = type;
         this.font = font;
         this.udpFontPortOrtcpFontPort = udpFontPortOrtcpFontPort;
@@ -92,6 +134,7 @@ class Header{
         this.dest = dest;
         this.jumps = jumps;
         this.timestamp = timestamp;
+        this.id = id;
     }
 
     public int getType() { return type; }
@@ -108,14 +151,17 @@ class Header{
 
     public int getUdpOriginPortOrtcpOriginPort() { return udpOriginPortOrtcpOriginPort; }
 
+    public String getId() { return id; }
+
     public byte[] typeMessage() throws IOException {
         byte []header = null;
         switch (this.type){
             case 1:
             case 2:
             case 3:
-                if(this.timestamp == null) timestamp = new Timestamp(new Date().getTime());
-                header = (this.type + ";" + this.host + ":" + this.udpOriginPortOrtcpOriginPort + ";" + this.dest + ";" + this.jumps + ";" + this.timestamp + ";" + this.font + ":" + this.udpFontPortOrtcpFontPort).getBytes(StandardCharsets.UTF_8);
+                if(this.timestamp == null) this.timestamp = new Timestamp(new Date().getTime());
+                if(this.id == null) this.id = timestamp.toString() + font;
+                header = (this.type + ";" + this.host + ":" + this.udpOriginPortOrtcpOriginPort + ";" + this.dest + ";" + this.jumps + ";" + this.timestamp + ";" + this.font + ":" + this.udpFontPortOrtcpFontPort + ";" + this.id).getBytes(StandardCharsets.UTF_8);
                 break;
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
@@ -138,7 +184,8 @@ class Header{
         Timestamp timestamp = Timestamp.valueOf(header[4]);
         String font = header[5].split(":")[0];
         int udpFontPortOrtcpFontPort = Integer.parseInt(header[5].split(":")[1]);
-        return new Header(type, font, udpFontPortOrtcpFontPort, udpOriginPortOrtcpOriginPort, host, dest, jumps, timestamp);
+        String id = header[6];
+        return new Header(type, font, udpFontPortOrtcpFontPort, udpOriginPortOrtcpOriginPort, host, dest, jumps, timestamp, id);
     }
 
     @Override
@@ -152,6 +199,7 @@ class Header{
                 ", dest='" + dest + '\'' +
                 ", jumps=" + jumps +
                 ", timestamp=" + timestamp +
+                ", id=" + id +
                 '}';
     }
 }

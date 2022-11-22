@@ -16,7 +16,6 @@ public class Router {
     // Now is an Integer, later change to an InetAddress!!!!!!!
     private ConcurrentHashMap<Integer, DataOutputStream> outputVizinhos = new ConcurrentHashMap<>();
     // Now is an Integer, later change to an InetAddress!!!!!!!
-    private ConcurrentHashMap<Integer, ArrayList<Rota>> tabelaEncaminhamento = new ConcurrentHashMap<>();
     private UDPCenter udpCenter;
 
     public Router(int tcpPort, int udpPort, ArrayList<Vizinho> vizinhos) throws IOException {
@@ -30,7 +29,7 @@ public class Router {
     public void run() throws IOException {
         while(true) {
             Socket client = this.serverSocket.accept();
-            Thread thread = new Thread(new RouterWorker(this.tcpPort, this.udpPort, this.vizinhos, this.outputVizinhos, client, this.tabelaEncaminhamento, this.udpCenter));
+            Thread thread = new Thread(new RouterWorker(this.tcpPort, this.udpPort, this.vizinhos, this.outputVizinhos, client, this.udpCenter));
             thread.start();
         }
     }
@@ -61,14 +60,16 @@ class Rota{
 
     public void setState(boolean state) { this.state = state; }
 
+    public void setDelay(long delay) { this.delay = delay; }
+
     @Override
     public String toString() {
         return "| " + interfaceSaida.toString() +
                 "  |      " + delay +
                 "        |     " + jumps +
                 "      | " + destino +
-                "  |   " + state +
-                "    |";
+                "  |    " + state +
+                "      |";
     }
 }
 

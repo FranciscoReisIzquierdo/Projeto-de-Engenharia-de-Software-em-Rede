@@ -31,7 +31,7 @@ public class Cliente {
 
 
     public void request() throws IOException {
-        Header header = new Header(2, this.host.toString(), this.RTP_RCV_PORT, this.RTP_RCV_PORT, "/" + this.host.toString().split("/")[1], this.dest.toString(), 0, null);
+        Header header = new Header(2, this.host.toString(), this.RTP_RCV_PORT, this.RTP_RCV_PORT, "/" + this.host.toString().split("/")[1], this.dest.toString(), 0, null, null);
         this.output.write(header.typeMessage());
         this.output.flush();
         this.isOn = true;

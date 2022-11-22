@@ -22,7 +22,7 @@ public class StreamWorker extends JFrame implements ActionListener{
     //int RTP_dest_port = 25000; //destination port for RTP packets
     //int RTP_dest_port; //destination port for RTP packets
     InetAddress ClientIPAddr; //Client IP address
-    List<Vizinho> UDPclients = new ArrayList<>();
+    ArrayList<Vizinho> UDPclients = new ArrayList<>();
 
     static String VideoFileName; //video file to request to the server
 
@@ -41,7 +41,7 @@ public class StreamWorker extends JFrame implements ActionListener{
     //--------------------------
     //Constructor
     //--------------------------
-    public StreamWorker(Vizinho vizinho) {
+    public StreamWorker(ArrayList<Vizinho> vizinho) {
         //init Frame
         super("StreamWorker");
 
@@ -50,7 +50,7 @@ public class StreamWorker extends JFrame implements ActionListener{
         sTimer.setInitialDelay(0);
         sTimer.setCoalesce(true);
         sBuf = new byte[15000]; //allocate memory for the sending buffer
-        this.UDPclients.add(vizinho);
+        this.UDPclients = vizinho;
         //this.RTP_dest_port = destPort;
         try {
             RTPsocket = new DatagramSocket(); //init RTP socket
@@ -129,6 +129,7 @@ public class StreamWorker extends JFrame implements ActionListener{
         {
             //if we have reached the end of the video file, stop the timer
             sTimer.stop();
+            new StreamWorker(this.UDPclients);
         }
     }
 

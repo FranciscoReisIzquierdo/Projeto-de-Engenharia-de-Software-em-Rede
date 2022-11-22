@@ -111,7 +111,7 @@ public class ClientStream{
             //stop the timer
             cTimer.stop();
             try {
-                Header header = new Header(3, host.toString(), RTP_RCV_PORT, RTP_RCV_PORT, host.toString(), dest.toString(), 0, null);
+                Header header = new Header(3, host.toString(), RTP_RCV_PORT, RTP_RCV_PORT, host.toString(), dest.toString(), 0, null, null);
                 output.write(header.typeMessage());
                 output.flush();
                 client.close();
