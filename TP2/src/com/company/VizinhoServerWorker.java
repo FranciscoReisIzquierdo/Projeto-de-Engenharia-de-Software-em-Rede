@@ -51,6 +51,7 @@ public class VizinhoServerWorker implements Runnable{
                         break;
 
                     case 3:
+                    case 4:
                         destroyStreamFlow(header);
                         break;
                 }
