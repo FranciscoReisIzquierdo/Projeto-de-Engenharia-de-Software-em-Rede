@@ -283,7 +283,7 @@ public class RouterWorker implements Runnable{
 
         if(this.udpCenter.getUDPClients() == 0){
             Rota bestRota = this.udpCenter.getTabelaEncaminhamento().get(this.udpCenter.getServer()).get(0);
-            Header request = new Header(3, header.getFont(), header.getUdpFontPortOrtcpFontPort(), this.udpPort, "/" + this.host.toString().split("/")[1], bestRota.getInterfaceSaida().getVizinho().toString(), header.getJumps() + 1, header.getTimestamp(), header.getId());
+            Header request = new Header(4, header.getFont(), header.getUdpFontPortOrtcpFontPort(), this.udpPort, "/" + this.host.toString().split("/")[1], bestRota.getInterfaceSaida().getVizinho().toString(), header.getJumps() + 1, header.getTimestamp(), header.getId());
 
             try {
                 this.outputVizinhos.get(bestRota.getInterfaceSaida().getTcpPort()).write(request.typeMessage());

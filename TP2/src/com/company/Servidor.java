@@ -49,7 +49,6 @@ public class Servidor {
                     sentProbe(v, this.outputsVizinhos.get(v.getTcpPort()), flag);
                 }
                 i++;
-                System.out.println("I -> " + i);
             }
         }
     }
