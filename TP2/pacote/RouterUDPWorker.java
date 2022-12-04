@@ -28,6 +28,9 @@ public class RouterUDPWorker implements Runnable{
     public void run() {
         this.udpCenter.getLock().lock();
         streamingPackets();
+        try{
+            this.udpCenter.getLock().unlock();
+        } catch(Exception e){System.out.println("Try to unlock a lock that isn't mine!");}
         this.datagramSocket.close();
     }
 

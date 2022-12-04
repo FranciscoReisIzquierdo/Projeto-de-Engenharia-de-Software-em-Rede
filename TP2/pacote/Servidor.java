@@ -74,6 +74,7 @@ public class Servidor {
             }
             outputStream.write(header.typeMessage());
             outputStream.flush();
+            System.out.println("Sent tcp packet > " + header.toString());
         } catch (IOException | InterruptedException exception) {
             System.out.println("Something went wrong on VizinhoServerWorker class...fix it, u dumb fuck!");
         }

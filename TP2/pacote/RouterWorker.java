@@ -67,24 +67,25 @@ public class RouterWorker implements Runnable{
             int size;
             Header header = null;
             try {
+                System.out.println("Waiting for packets...");
                 size = this.input.read(info);
-                this.udpCenter.getLock().lock();
                 System.out.println("Size of byte array: " + size);
                 header = Header.translate(info, size);
+                System.out.println("Received TCP Packet > " + header.toString() + "\n");
+                
             } catch (Exception e) {
                 System.out.println("Here > Something went wrong on RouterWorker class...fix it you twat! -> " + e);
-                this.udpCenter.getLock().unlock();
             }
-            System.out.println("Received TCP Packet > " + header.toString() + "\n");
-
+            
+            this.udpCenter.getLock().lock();
             switch (header.getType()) {
                 case 1:
-                    this.udpCenter.getLock().lock();
                     try {
                         buildTabelaEncaminhamento(header);
                     } catch (UnknownHostException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();
+                        this.udpCenter.getLock().unlock();
                     }
                     setBestServer();
                     printTabelaEncaminhamento();
@@ -93,24 +94,27 @@ public class RouterWorker implements Runnable{
                         break;
                     }
                     this.udpCenter.getIdMessages().put(header.getId(), true);
-                    this.udpCenter.getLock().unlock();
                     try {
                         flooding(header);
+                        this.udpCenter.getLock().unlock();
                     } catch (UnknownHostException e) {
                         System.out.println("Something went wrong on RouterWorker class while flooding the network... fix it u dumb fuck!");
+                        this.udpCenter.getLock().unlock();
                     }
                     break;
 
                 case 2:
                     request(header);
+                    this.udpCenter.getLock().unlock();
                     break;
 
                 case 3:
                 case 4:
                     running = destroyFlow(header, header.getType());
+                    System.out.println("Saiiii2");
+                    this.udpCenter.getLock().unlock();
                     break;
             }
-            this.udpCenter.getLock().unlock();
         }
         try {
             this.connection.shutdownInput();
@@ -132,7 +136,6 @@ public class RouterWorker implements Runnable{
                 break;
             }
         }
-        this.udpCenter.getLock().lock();
         if(!this.udpCenter.getTabelaEncaminhamento().containsKey(InetAddress.getByName(header.getFont()))){
             ArrayList<Rota> rotas = new ArrayList<>();
             rotas.add(rota);
@@ -176,7 +179,6 @@ public class RouterWorker implements Runnable{
             }
             if(!flag) listaRotas.add(rota);
         }
-        this.udpCenter.getLock().unlock();
     }
 
     public void flooding(Header header) throws UnknownHostException {
@@ -210,7 +212,7 @@ public class RouterWorker implements Runnable{
         int jumps = -1;
         // Also change here the Integer to InetAddress!!!!!!!
         InetAddress server = null;
-        this.udpCenter.getLock().lock();
+        
         for(Map.Entry<InetAddress, ArrayList<Rota>> set : this.udpCenter.getTabelaEncaminhamento().entrySet()) {
             long compareDelay = set.getValue().get(0).getDelay();
             int compareJumps = set.getValue().get(0).getJumps();
@@ -233,12 +235,10 @@ public class RouterWorker implements Runnable{
             newFlow();
         }
         
-        this.udpCenter.getLock().unlock();
     }
 
 
     public void newFlow(){
-        this.udpCenter.getLock().lock();
         Rota bestRota = this.udpCenter.getTabelaEncaminhamento().get(this.udpCenter.getServer()).get(0);
         Header request = new Header(2, this.host.toString(), this.udpPort, this.udpPort, this.host.toString().split("/")[1], bestRota.getInterfaceSaida().getVizinho().toString(), 0, null, null);
         try {
@@ -249,11 +249,9 @@ public class RouterWorker implements Runnable{
         } catch (IOException e) {
             System.out.println("Something went wrong on RouterWorker class reading type 2 message...fix it u dumb fuck!");
         }
-        this.udpCenter.getLock().unlock();
     }
 
     public void changeFlow(){
-        this.udpCenter.getLock().lock();
         Rota bestRota = this.udpCenter.getTabelaEncaminhamento().get(this.udpCenter.getServer()).get(0);
         Header request = new Header(4, this.host.toString(), this.udpPort, this.udpPort, this.host.toString().split("/")[1], bestRota.getInterfaceSaida().getVizinho().toString(), 0, null, null);
         try {
@@ -264,7 +262,6 @@ public class RouterWorker implements Runnable{
         } catch (IOException e) {
             System.out.println("Something went wrong while sending type 3 message on class RouterWorker...fix it u dumb fuck!");
         }
-        this.udpCenter.getLock().unlock();
     }
 
     public void request(Header header){
@@ -275,7 +272,6 @@ public class RouterWorker implements Runnable{
                 break;
             }
         }
-        this.udpCenter.getLock().lock();
         this.udpCenter.getListaStreams().add(v);
         if(this.udpCenter.getUDPClients() == 0){
             //Alterar para InetAddress
@@ -294,11 +290,9 @@ public class RouterWorker implements Runnable{
             }
         }
         this.udpCenter.addUDPClient();
-        this.udpCenter.getLock().unlock();
     }
 
     public boolean destroyFlow(Header header, int type){
-        this.udpCenter.getLock().lock();
         this.udpCenter.removeUDPClient();
         for(Vizinho vizinho : this.udpCenter.getListaStreams()){
             if(vizinho.getVizinho().toString().split("/")[1].equals(header.getHost())){
@@ -320,11 +314,9 @@ public class RouterWorker implements Runnable{
             }
             bestRota.setState(false);
             for(Vizinho v : this.vizinhos){
-                // Change here to compare InetAddress!!!!!!!
                 if(v.getVizinho().toString().split("/")[1].equals(header.getFont().split("/")[1])){
-                    System.out.println("Client " + v.getVizinho() + ":" + v.getUdpPort() + " has disconnected\n");
                     if(type == 3) {
-                        this.udpCenter.getLock().unlock();
+                        System.out.println("Client " + v.getVizinho() + ":" + v.getUdpPort() + " has disconnected\n");
                         return false;
                     }
                 }
@@ -332,17 +324,15 @@ public class RouterWorker implements Runnable{
         }
         else if(this.udpCenter.getUDPClients() > 0){
             for(Vizinho v : this.vizinhos){
-                // Change here to compare InetAddress!!!!!!!
                 if(v.getVizinho().toString().split("/")[1].equals(header.getFont().split("/")[1])){
-                    System.out.println("Client " + v.getVizinho() + ":" + v.getUdpPort() + " has disconnected\n");
                     if(type == 3) {
-                        this.udpCenter.getLock().unlock();
+                        System.out.println("Client " + v.getVizinho() + ":" + v.getUdpPort() + " has disconnected\n");
                         return false;
                     }
                 }
             }
         }
-        this.udpCenter.getLock().unlock();
+        System.out.println("Saiiiiiii");
         return true;
     }
 
@@ -350,7 +340,6 @@ public class RouterWorker implements Runnable{
         System.out.println("|-----------------------------------------------------------------------------------------------------------------|");
         System.out.println("|          Interface de Saída          |   Delay (ms)   |   Saltos   |          Destino          |    Estado      |");
         System.out.println("|-----------------------------------------------------------------------------------------------------------------|");
-        this.udpCenter.getLock().lock();
         for(Map.Entry<InetAddress, ArrayList<Rota>> set : this.udpCenter.getTabelaEncaminhamento().entrySet()){
             for(Rota rota : set.getValue()){
                 System.out.println(rota.toString());
@@ -358,6 +347,5 @@ public class RouterWorker implements Runnable{
             }
         }
         System.out.println("Best server: " + this.udpCenter.getServer());
-        this.udpCenter.getLock().unlock();
     }
 }
